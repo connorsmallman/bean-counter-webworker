@@ -1,0 +1,48 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+  <meta charset="utf-8">
+  <title>Bean Counter</title>
+  </head>
+  <body>
+    <h1>Bean Counter</h1>
+    <p class="amount">0</p>
+    <p class="total">0</p>
+    <button>Increment</button>
+    <script>
+      var worker = new SharedWorker('worker.js', 'core');
+
+      var $increment = document.querySelector('button');
+      var $amount = document.querySelector('.amount');
+      var $total = document.querySelector('.total');
+
+      // setup
+      function configure(event) {
+        if (event.data.message !== 'cfg') return;
+        var amount = 0;
+        var id = event.data.id;
+        // show id
+        document.querySelector('h1').textContent += ' ' + id;
+        // clean up listener
+        worker.port.removeEventListener('message', configure, false);
+        // set current total
+        $total.innerHTML = event.data.total;
+
+        $increment.addEventListener('click', function increment(e) {
+          amount++;
+          $amount.innerHTML = amount;
+          worker.port.postMessage({ message: 'merge', id: id, amount: amount });
+        });
+      }
+
+      function merge(event) {
+        if (event.data.message !== 'merge') return;
+        $total.innerHTML = event.data.total;
+      }
+
+      worker.port.addEventListener('message', configure, false);
+      worker.port.addEventListener('message', merge, false);
+      worker.port.start();
+    </script>
+  </body>
+</html>
